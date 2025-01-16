@@ -20,7 +20,7 @@ def get_request():
 	
 	return response 
 
-def find_address_with_INN(INN, KPP) -> tuple[str,str]:
+def find_address_with_INN(INN, KPP, db) -> tuple[str,str]:
 	url = "http://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party"
 
 	api_key = "93d565449b876ddb521af38876915cc2889b9740"
@@ -34,6 +34,10 @@ def find_address_with_INN(INN, KPP) -> tuple[str,str]:
 	data = {"query": str(INN) }
 
 	response = requests.post(url,json= data, headers=headers)
+
+	if response.status_code != 200:
+		print(f"Ошибка запроса {response.status_code}")
+		db.commit()
 	print(response.json())
 	parsed_data = response.json()["suggestions"]
 	for data in parsed_data:
@@ -51,7 +55,6 @@ def find_address_with_INN(INN, KPP) -> tuple[str,str]:
 def parser2(response):
 	soup = BeautifulSoup(response.text, 'html.parser')
 	db = next(get_db())
-	N = 5
 	try:
 		path = "step2"
 		os.mkdir(path)
@@ -98,7 +101,7 @@ def parser2(response):
 					organization =  ob[1].text
 					inn = ob[2].text
 					kpp = ob[3].text
-					address,region = find_address_with_INN(ob[2].text, ob[3].text)
+					address,region = find_address_with_INN(ob[2].text, ob[3].text, db)
 
 					new_data = parser_storage(
 						ownership_form = ownership_form,
@@ -112,19 +115,6 @@ def parser2(response):
 						)
 					db.add(new_data)
 
-
-					file.write(f"{th[1].text.replace('формы собственности', '')} ")
-					file.write(f"{name} | ")
-					file.write(f"{ th[1+j].text } | ")
-					
-					file.write(f"{ob[1].text} | {ob[2].text}  | {ob[3].text} | {find_address_with_INN(ob[2].text, ob[3].text)}")
-					file.write("\n")
-
-					if N >0:
-						N = N - 1
-					else:
-						db.commit()
-						return
 					
 
 
@@ -143,7 +133,7 @@ def parser2(response):
 
 	sub1_panel2 = panel2.find( id='panel_ed059bddbb59879821d31d8ea84dc724_3',recursive=True)
 	table_parser(sub1_panel2,N)
-
+	db.commit()
 
 def main():
 	response = get_request()
