@@ -46,6 +46,18 @@ class parser_storage(Base):
         TEXT,
         nullable=True,
     )
+    phone = Column(
+        TEXT,
+        nullable = True,
+    )
+    email = Column(
+        TEXT,
+        nullable = True,
+    )
+    employee_count = Column(
+        TEXT,
+        nullable = True,
+    )
 
     
 

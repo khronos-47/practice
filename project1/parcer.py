@@ -20,7 +20,7 @@ def get_request():
 	
 	return response 
 
-def find_address_with_INN(INN, KPP, db) -> tuple[str,str]:
+def find_address_with_INN(INN, KPP, db):
 	url = "http://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party"
 
 	api_key = "93d565449b876ddb521af38876915cc2889b9740"
@@ -38,18 +38,36 @@ def find_address_with_INN(INN, KPP, db) -> tuple[str,str]:
 	if response.status_code != 200:
 		print(f"Ошибка запроса {response.status_code}")
 		db.commit()
-	print(response.json())
+	#print(response.json())
 	parsed_data = response.json()["suggestions"]
 	for data in parsed_data:
 		if "kpp" in data["data"] and data["data"]["kpp"] == kpp:
-			return data["data"]["address"]["data"]["source"],data["data"]["address"]["data"]["area_with_type"]
+			return (
+				data["data"]["address"]["data"]["source"],
+				data["data"]["address"]["data"]["area_with_type"],
+				data["data"]["emails"] or None,
+				data["data"]["phones"] or None,
+				data["data"]["employee_count"] or None
+				)
 	for data in parsed_data:
 		if "branch_type" in data["data"] and data["data"]["branch_type"] == "MAIN":
-			return data["data"]["address"]["data"]["source"],data["data"]["address"]["data"]["area_with_type"]
+			return (
+				data["data"]["address"]["data"]["source"],
+				data["data"]["address"]["data"]["area_with_type"],
+				data["data"]["emails"] or None,
+				data["data"]["phones"] or None,
+				data["data"]["employee_count"] or None
+				)
 	if len(parsed_data) == 0:
-		return "None","None"
+		return (None, None,None,None,None)
 	else:
-		return parsed_data[0]["data"]["address"]["data"]["source"],parsed_data[0]["data"]["address"]["data"]["area_with_type"]
+		return (
+			parsed_data[0]["data"]["address"]["data"]["source"],
+			parsed_data[0]["data"]["address"]["data"]["area_with_type"],
+			parsed_data[0]["data"]["emails"] or None ,
+			parsed_data[0]["data"]["phones"] or None,
+			parsed_data[0]["data"]["employee_count"] or None,
+			)
 
 
 def parser2(response):
@@ -63,7 +81,7 @@ def parser2(response):
 		pass
 
 	file = open(f"{path}/table.txt","w")
-	
+	N = 5
 	def table_parser(table,N):
 		th = table.find_all("th")
 		lines = table.find_all('tr')
@@ -101,7 +119,9 @@ def parser2(response):
 					organization =  ob[1].text
 					inn = ob[2].text
 					kpp = ob[3].text
-					address,region = find_address_with_INN(ob[2].text, ob[3].text, db)
+					address,region,email,phone,employee_count = find_address_with_INN(ob[2].text, ob[3].text, db)
+					#print("Phone:", phone,"  ",email)
+
 
 					new_data = parser_storage(
 						ownership_form = ownership_form,
@@ -111,14 +131,13 @@ def parser2(response):
 						inn = inn,
 						kpp =kpp,
 						address =address,
-						region = region
+						region = region,
+						phone = phone,
+						email = email,
+						employee_count = employee_count 
 						)
+
 					db.add(new_data)
-
-					
-
-
-				
 
 
 
