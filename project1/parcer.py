@@ -5,6 +5,7 @@ import json
 from project1.database.models import parser_storage
 from project1.database.database import get_db
 from sqlalchemy.orm import Session
+from project1.utils.search_contacts_with_inn import get_contact
 
 url = "https://prognoz.vcot.info"
 session = requests.Session()
@@ -112,7 +113,7 @@ def parser2(response):
 					ob = line.find_all("td")
 					if ob == []:
 						continue
-
+					#print(ob)
 					ownership_form = f"{th[1].text.replace('формы собственности', '')}" 
 					economic_activity = f"{name}"
 					number = f"{ th[1+j].text }"
@@ -120,8 +121,19 @@ def parser2(response):
 					inn = ob[2].text
 					kpp = ob[3].text
 					address,region,email,phone,employee_count = find_address_with_INN(ob[2].text, ob[3].text, db)
-					#print("Phone:", phone,"  ",email)
 
+					contacts = get_contact(ob[2].text)
+
+					if phone is None:
+						phone = contacts["Номер телефона"]
+
+					if email is None:
+						email = contacts["Электронная почта"]
+
+					#print("Phone:", phone,"  ",email," ",employee_count)
+
+
+					
 
 					new_data = parser_storage(
 						ownership_form = ownership_form,
@@ -160,3 +172,4 @@ def main():
 	#parser(response)
 
 	#find_address_with_INN(5421110537,542100994)
+	#print(get_contact(540230327779))
