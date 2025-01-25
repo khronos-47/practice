@@ -47,13 +47,13 @@ poetry shell
 
 ### Запуск
 
-0. Создать `.env` файл с этими переменными (можно командой `make env`)
+1. Создать `.env` файл с этими переменными (можно командой `make env`)
 ```dotenv
 POSTGRES_DB=database
 POSTGRES_USER=user
 POSTGRES_PASSWORD=password
 POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
+POSTGRES_PORT=6432
 ```
 
 2. Создание базы в docker-контейнере (чтобы не работать с локальной базой):

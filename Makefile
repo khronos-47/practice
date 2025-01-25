@@ -33,8 +33,8 @@ HELP_FUN = \
 
 # Commands
 env:  ##@Environment Create .env file with variables
-	@$(eval SHELL:=/bin/bash)св з
-	@cp .env.example .env
+	@$(eval SHELL:=/bin/bash) cd  $(APPLICATION_NAME)
+	@cp .env_example .env
 
 help: ##@Help Show this help
 	@echo -e "Usage: make [target] ...\n"
