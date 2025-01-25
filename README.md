@@ -21,6 +21,16 @@ kal.json один из видов возвращаемых данных из dad
 - `Python 3.12`
 - `Poetry`
 
+создать .env файл как минимум с дефолтными параметрами
+
+Пример:
+POSTGRES_DB=database
+POSTGRES_USER=user
+POSTGRES_PASSWORD=password
+POSTGRES_HOST=localhost
+POSTGRES_PORT=6432
+
+
 ### Установка
 
 1. Создание виртуального окружения и установка зависимостей
@@ -39,10 +49,10 @@ poetry shell
 
 0. Создать `.env` файл с этими переменными (можно командой `make env`)
 ```dotenv
-POSTGRES_DB=...
-POSTGRES_USER=...
-POSTGRES_PASSWORD=...
-POSTGRES_HOST=...
+POSTGRES_DB=database
+POSTGRES_USER=user
+POSTGRES_PASSWORD=password
+POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 ```
 
