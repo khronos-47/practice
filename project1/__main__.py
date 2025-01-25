@@ -1,9 +1,4 @@
-from .parcer import main
-
-from logging import getLogger
-from uvicorn import run
-
-logger = getLogger(__name__)
+from project1.parcer import main
 
 
 app = main()

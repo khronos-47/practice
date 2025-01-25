@@ -9,8 +9,12 @@ from project1.utils.search_contacts_with_inn import get_contact
 
 url = "https://prognoz.vcot.info"
 session = requests.Session()
-def get_request():
 
+
+def get_request():
+	"""
+		функция для подклчение на сайт 
+	"""
 	url = "https://prognoz.vcot.info/default/default/confirm/?e=mva@nso.ru&h=99dfd32317a0ed864f98872d2d8d4f26&se=prognoz@vniitruda.ru"
 	response = session.get(url)
 	if response.status_code == 200:
@@ -21,7 +25,12 @@ def get_request():
 	
 	return response 
 
-def find_address_with_INN(INN, KPP, db):
+def find_address_with_INN(INN, KPP=0):
+	"""
+		берет ИНН и КПП ((опционально , нужно что бы найти конкретный филиал ))
+		возвращает кортеж с данными 
+		возвращает False при ошибке запроса
+	"""
 	url = "http://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party"
 
 	api_key = "93d565449b876ddb521af38876915cc2889b9740"
@@ -38,7 +47,7 @@ def find_address_with_INN(INN, KPP, db):
 
 	if response.status_code != 200:
 		print(f"Ошибка запроса {response.status_code}")
-		db.commit()
+		return False
 	#print(response.json())
 	parsed_data = response.json()["suggestions"]
 	for data in parsed_data:
@@ -72,6 +81,19 @@ def find_address_with_INN(INN, KPP, db):
 
 
 def parser2(response):
+	""" 
+		фунция парсит сайт 
+		берет response (ответ на запрос к сайту)
+
+		парсит его получает данные из 
+		find_address_with_INN(INN, KPP=0) и если он не дал 
+		контактов получает их из get_contact(INN)
+
+		при полном парсинге сохраняет все в базу данных 
+
+	"""
+
+
 	soup = BeautifulSoup(response.text, 'html.parser')
 	db = next(get_db())
 	try:
@@ -82,8 +104,11 @@ def parser2(response):
 		pass
 
 	file = open(f"{path}/table.txt","w")
-	N = 5
-	def table_parser(table,N):
+	def table_parser(table):
+		"""
+			вспомогательная функция парсит таблички по ссылке
+			подстройена под радительскую функцию и поэтому вложена в ней
+		"""
 		th = table.find_all("th")
 		lines = table.find_all('tr')
 		
@@ -120,7 +145,13 @@ def parser2(response):
 					organization =  ob[1].text
 					inn = ob[2].text
 					kpp = ob[3].text
-					address,region,email,phone,employee_count = find_address_with_INN(ob[2].text, ob[3].text, db)
+
+					datas = find_address_with_INN(ob[2].text, ob[3].text)
+					if datas == False:
+						db.commit()
+						exit()
+
+					address,region,email,phone,employee_count = datas
 
 					contacts = get_contact(ob[2].text)
 
@@ -154,16 +185,14 @@ def parser2(response):
 
 
 	panel2 = soup.find(id='panel_2',recursive=True)
-	st = 'tr'
-	print(st)
 	sub1_panel2 = panel2.find( id='panel_ed059bddbb59879821d31d8ea84dc724_1',recursive=True)
-	table_parser(sub1_panel2,N)
+	table_parser(sub1_panel2)
 
 	sub1_panel2 = panel2.find( id='panel_ed059bddbb59879821d31d8ea84dc724_2',recursive=True)
-	table_parser(sub1_panel2,N)
+	table_parser(sub1_panel2)
 
 	sub1_panel2 = panel2.find( id='panel_ed059bddbb59879821d31d8ea84dc724_3',recursive=True)
-	table_parser(sub1_panel2,N)
+	table_parser(sub1_panel2)
 	db.commit()
 
 def main():

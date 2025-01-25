@@ -1,3 +1,11 @@
+""" 
+	универсальная утилита обработки данных из excell
+	обрабатывает все файлы из папки "компас"
+
+	берет только столбцы: "ИНН", "Номер телефона","Электронная почта"
+	возвращает dict() пример {"Номер телефона":None, "Электронная почта": None}
+"""
+
 import pandas as pd
 import os
 import numpy as np
@@ -11,13 +19,6 @@ files = os.listdir(directory)
 file = list()
 for i in files:
 	file.append(pd.read_excel(f"{directory}/{i}", usecols=["ИНН", "Номер телефона","Электронная почта"]))
-
-# file.append(pd.read_excel("41 2024-08-07 10-28.xlsx", usecols=["ИНН", "Номер телефона","Электронная почта"]))
-# file.append(pd.read_excel("43 2024-08-07 10-27.xlsx", usecols=["ИНН", "Номер телефона","Электронная почта"]))
-# file.append(pd.read_excel("49 2024-08-07 10-28.xlsx", usecols=["ИНН", "Номер телефона","Электронная почта"]))
-# file.append(pd.read_excel("52 2024-08-07 10-28.xlsx", usecols=["ИНН", "Номер телефона","Электронная почта"]))
-# file.append(pd.read_excel("69 2024-08-07 10-27.xlsx", usecols=["ИНН", "Номер телефона","Электронная почта"]))
-# file.append(pd.read_excel("71 2024-08-07 10-24.xlsx", usecols=["ИНН", "Номер телефона","Электронная почта"]))
 
 
 
@@ -34,7 +35,7 @@ def get_contact(inn):
 		con = f[f["ИНН"] == inn].replace({np.nan: None}).to_dict(orient="records")
 
 		if len(con ) >0:
-			print(con)
+			#print(con)
 			return con[0]
 
 	return default
