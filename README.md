@@ -21,15 +21,6 @@ kal.json один из видов возвращаемых данных из dad
 - `Python 3.12`
 - `Poetry`
 
-создать .env файл как минимум с дефолтными параметрами
-
-Пример:
-POSTGRES_DB=database
-POSTGRES_USER=user
-POSTGRES_PASSWORD=password
-POSTGRES_HOST=localhost
-POSTGRES_PORT=6432
-
 
 ### Установка
 
