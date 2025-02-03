@@ -1,3 +1,4 @@
+from project1.logger.logger_config import setup_logger
 import requests
 from bs4 import BeautifulSoup
 import os
@@ -6,21 +7,27 @@ from project1.database.models import parser_storage
 from project1.database.database import get_db
 from sqlalchemy.orm import Session
 from project1.utils.search_contacts_with_inn import get_contact
+from dotenv import load_dotenv
+import os
 
-url = "https://prognoz.vcot.info"
+load_dotenv()
+logger = setup_logger("parcer")
+url = os.getenv("dadata_url") 
+api_key = os.getenv("dadata_api_key")
+domain = os.getenv("domain")
 session = requests.Session()
 
 
 def get_request():
 	"""
-		функция для подклчение на сайт 
+		функция для подключение на сайт 
 	"""
-	url = "https://prognoz.vcot.info/default/default/confirm/?e=mva@nso.ru&h=99dfd32317a0ed864f98872d2d8d4f26&se=prognoz@vniitruda.ru"
+	url = os.getenv("parcer_url") 
 	response = session.get(url)
 	if response.status_code == 200:
-		print("Успешное подключение!")
+		logger.info("Successful connection!")
 	else:
-		print(f"connect error: {response.status_code}")
+		logger.error(f"connect error: {response.status_code}")
 		exit()
 	
 	return response 
@@ -31,22 +38,23 @@ def find_address_with_INN(INN, KPP=0):
 		возвращает кортеж с данными 
 		возвращает False при ошибке запроса
 	"""
-	url = "http://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party"
+	logger.info(f"find_address {INN}, {KPP}" )
 
-	api_key = "93d565449b876ddb521af38876915cc2889b9740"
-
+	url = os.getenv("dadata_url")
+	api_key = os.getenv("dadata_api_key")
 
 	headers = { 
-	"Content-Type": "application/json",
-	"Accept": "application/json",
-	"Authorization": "Token 93d565449b876ddb521af38876915cc2889b9740" }
+		"Content-Type": "application/json",
+		"Accept": "application/json",
+		"Authorization": f"Token {api_key}" 
+		}
 	kpp = str(KPP)
 	data = {"query": str(INN) }
 
 	response = requests.post(url,json= data, headers=headers)
 
 	if response.status_code != 200:
-		print(f"Ошибка запроса {response.status_code}")
+		logger.warning(f"Ошибка запроса {response.status_code} {response.json()}")
 		return False
 	#print(response.json())
 	parsed_data = response.json()["suggestions"]
@@ -80,7 +88,7 @@ def find_address_with_INN(INN, KPP=0):
 			)
 
 
-def parser2(response):
+def parser2(response, enterprise_type = "all"):
 	""" 
 		фунция парсит сайт 
 		берет response (ответ на запрос к сайту)
@@ -93,17 +101,11 @@ def parser2(response):
 
 	"""
 
-
+	total_items = 0
 	soup = BeautifulSoup(response.text, 'html.parser')
 	db = next(get_db())
-	try:
-		path = "step2"
-		os.mkdir(path)
-		
-	except:
-		pass
 
-	file = open(f"{path}/table.txt","w")
+
 	def table_parser(table):
 		"""
 			вспомогательная функция парсит таблички по ссылке
@@ -111,13 +113,16 @@ def parser2(response):
 		"""
 		th = table.find_all("th")
 		lines = table.find_all('tr')
-		
+		status = False
 
 
 		for i in range(2,len(lines)):
 			a = lines[i].find_all("td")
 			name = a[0].text
-
+			if enterprise_type.lower() in name.lower() and enterprise_type != "all":
+				status =True
+			else:
+				continue
 			for j in range (1,6):
 
 				try:
@@ -128,8 +133,7 @@ def parser2(response):
 				href = k.get("href").replace("®ion","&region")
 				#print(href)
 
-
-				table_res = session.get(url + href)
+				table_res = session.get(domain + href)
 
 				table_in_href = BeautifulSoup(table_res.text, 'html.parser')
 				heads = table_in_href.find_all("th")
@@ -161,11 +165,6 @@ def parser2(response):
 					if email is None:
 						email = contacts["Электронная почта"]
 
-					#print("Phone:", phone,"  ",email," ",employee_count)
-
-
-					
-
 					new_data = parser_storage(
 						ownership_form = ownership_form,
 						economic_activity = economic_activity,
@@ -181,23 +180,33 @@ def parser2(response):
 						)
 
 					db.add(new_data)
+					nonlocal  total_items
+					total_items = total_items + 1
+					print(f"\rОбработано: {total_items}   | {ownership_form}| {economic_activity}| {number}| {organization}| {inn}", end='', flush=True)
+			if status:
+				db.commit()
+				return
 
 
 
 	panel2 = soup.find(id='panel_2',recursive=True)
 	sub1_panel2 = panel2.find( id='panel_ed059bddbb59879821d31d8ea84dc724_1',recursive=True)
 	table_parser(sub1_panel2)
-
+	logger.debug("end parcing panel_ed059bddbb59879821d31d8ea84dc724_1")
 	sub1_panel2 = panel2.find( id='panel_ed059bddbb59879821d31d8ea84dc724_2',recursive=True)
 	table_parser(sub1_panel2)
-
+	logger.debug("end parcing panel_ed059bddbb59879821d31d8ea84dc724_2")
 	sub1_panel2 = panel2.find( id='panel_ed059bddbb59879821d31d8ea84dc724_3',recursive=True)
 	table_parser(sub1_panel2)
+	logger.debug("end parcing panel_ed059bddbb59879821d31d8ea84dc724_3")
 	db.commit()
+	logger.debug("db commit")
 
 def main():
+
 	response = get_request()
-	parser2(response)
+	
+	parser2(response, "Рыболовство и рыбоводство")
 	#parser(response)
 
 	#find_address_with_INN(5421110537,542100994)
